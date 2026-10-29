@@ -8,9 +8,11 @@
 #   F<TAB>text  フッター（常に表示）
 # 1行が FIELD_MAX*2 バイトを超える場合は UTF-8 の文字境界で切り詰める。
 #
-# bounded_output MAX_BYTES OFFSET NEXT_CMD
+# bounded_output MAX_BYTES OFFSET NEXT_CMD [PAGE]
+#   PAGE を指定すると、続きの offset を「OFFSET + 表示件数」ではなく「OFFSET + PAGE」にする
+#   （1ページに複数の一覧を含む compare.sh 用。バイト上限で途中が省略された場合は --limit を減らすよう案内する）
 bounded_output() {
-  LC_ALL=C awk -v max="$1" -v off="$2" -v nextcmd="$3" -v fmax="$((ISU_FIELD_MAX_BYTES * 2))" '
+  LC_ALL=C awk -v max="$1" -v off="$2" -v nextcmd="$3" -v page="${4:-0}" -v fmax="$((ISU_FIELD_MAX_BYTES * 2))" '
     BEGIN { for (i = 1; i < 256; i++) ord[sprintf("%c", i)] = i }
     function cut(s, n,   L, p, b, need) {
       if (length(s) <= n) return s
@@ -52,7 +54,10 @@ bounded_output() {
       for (i = 1; i <= k; i++) print item[i]
       for (i = 1; i <= nf; i++) print ftr[i]
       printf "--- 返却: %d 件 (offset %d から) / バイト上限 %d による省略: %s\n", k, off, max, (cutbytes ? "あり" : "なし")
-      if (cutbytes || more) { nc = nextcmd; if (!sub(/%OFFSET%/, off + k, nc)) nc = nc " --offset " (off + k); print "--- 続き: " nc }
+      if (page > 0 && cutbytes) print "--- 続き: バイト上限で途中を省略した。--limit を小さくするか --max-bytes を増やして再実行"
+      else if (page > 0 && more) print "--- 続き: " nextcmd " --offset " (off + page)
+      else if ((cutbytes || more) && nextcmd == "") print "--- 続き: 省略した項目は scripts/evidence.sh で取得できます"
+      else if (cutbytes || more) { nc = nextcmd; if (!sub(/%OFFSET%/, off + k, nc)) nc = nc " --offset " (off + k); print "--- 続き: " nc }
       else print "--- 続き: なし（最後まで表示済み）"
     }'
 }

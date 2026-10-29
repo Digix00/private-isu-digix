@@ -19,6 +19,13 @@ Go アプリ・MySQL・nginx（Ubuntu + systemd のサーバー）を、手元�
 | `scripts/deploy/nginx.sh` | 管理する nginx 設定だけを配置し、`nginx -t` が通った場合だけ reload | あり |
 | `scripts/deploy/mysql.sh` | 管理する MySQL 設定だけを配置・検証し、反映方法（なし / SET GLOBAL / 再起動）を明示的に選ぶ | あり |
 | `scripts/lock.sh` | 対象ホスト上の実行状態ロックの確認・解除（計測中のデプロイを防ぐ） | 解除のみ |
+| `scripts/measure.sh` | ベンチ1回分の計測（start / profile / stop / result）。ログの区間切り出しと回収 | 記録用プロセスの起動・停止のみ |
+| `scripts/report.sh` | 回収したデータの集計（metrics.json・manifest.json・reports/）と context.md の生成 | なし |
+| `scripts/agent-context.sh` | 実行ごとの入口 context.md（8 KiB 以内）を固定テンプレートで生成 | なし |
+| `scripts/evidence.sh` | 対象を絞った根拠の取得（summary / api / sql / sql-detail / logs / resources / pprof） | なし |
+| `scripts/compare.sh` | 基準の実行との比較（比較できない項目と理由を先に表示） | なし |
+
+よく使う操作は `make help` でも一覧できます（`Makefile` は上のスクリプトを呼ぶだけのメニューです）。
 
 ## 依存関係
 
@@ -62,10 +69,26 @@ scripts/setup-tools.sh install --remote --dry-run   # 導入予定の確認だ�
 scripts/setup-tools.sh install --remote             # 実際に導入
 scripts/deploy/app.sh --dry-run                  # 配布予定の確認（ビルド・SSH は行わない）
 scripts/deploy/app.sh && scripts/verify.sh         # 配布して確認
+
+# ベンチ1回分
+scripts/measure.sh start trial-001 --note "初期状態"   # → ベンチを実行
+scripts/measure.sh stop trial-001
+scripts/measure.sh result trial-001 --pass true --score 1234
+scripts/report.sh trial-001 && cat results/trial-001/context.md
+scripts/evidence.sh sql trial-001 --limit 10
+scripts/compare.sh trial-000 trial-001
 ```
 
 当日の流れは [docs/environment-template.md](docs/environment-template.md) に構成を記録しながら進めます。
 配布・復旧・再起動試験・終了前の確認は [docs/operations.md](docs/operations.md) を参照してください。
+
+| ドキュメント | 内容 |
+| --- | --- |
+| [docs/first-hour.md](docs/first-hour.md) | 競技開始後の確認・初期ベンチ・計測導入 |
+| [docs/environment-template.md](docs/environment-template.md) | 当日の構成を記録する雛形 |
+| [docs/measurement.md](docs/measurement.md) | 計測方法、出力の見方、次に調べる箇所の決め方 |
+| [docs/operations.md](docs/operations.md) | 配布・反映・復旧・初期化・再起動試験・終了前の確認 |
+| [docs/agent-workflow.md](docs/agent-workflow.md) | CLI エージェントへの受け渡し・段階的な調査・実験比較・引き継ぎ |
 
 ## 設計と、その理由
 
@@ -77,6 +100,8 @@ scripts/deploy/app.sh && scripts/verify.sh         # 配布して確認
 - **デプロイは対象ごとに入口を分けました。** アプリを配布したついでに MySQL を再起動する、といったことが起きないようにするためです。どの入口も、扱うのは設定に書いたファイルとサービスだけです。
 - **計測中のホストへの配布は拒否します。** 対象ホスト上のロック（`mkdir` による排他）を、deploy と measure で共有しています。複数の手元 PC から操作しても、ロックは対象ホスト側で判定されます。
 - **出力量には上限があります。** 画面に出す調査結果は UTF-8 のバイト数で制限します（既定は 16 KiB、上限は 64 KiB。`--max-bytes` で変更可能）。省略した場合は、その旨と続きの取得方法を表示します。全文はファイルに保存します。
+- **計測結果は、実行IDごとのローカルのディレクトリで受け渡します**（`results/<run-id>/`）。人と機械の入口（`context.md`）、機械処理用の集計（`metrics.json` / `manifest.json`）、元データ（`raw/`）を分けています。特定の AI サービスや MCP、LLM API には依存しません。入口は LLM の要約ではなく固定テンプレートで作るので、観測した事実だけが載ります。
+- **集計は awk のストリーム処理で、対象データ全体に対して行います。** 表示の件数・バイト数の上限は、順位付けの母数に影響しません。巨大なログもメモリに展開しません。
 
 ## ディレクトリ
 
@@ -87,7 +112,10 @@ scripts/           手元で実行する入口
 scripts/deploy/    app / nginx / mysql の配布
 scripts/lib/       共通処理（設定読み込み・SSH・出力上限）
 scripts/remote/    SSH 越しに対象ホストで実行される処理
-templates/         nginx のログ形式、MySQL のスロークエリ設定、Go の pprof の組み込み例
+templates/         nginx のログ形式、MySQL のスロークエリ設定、Go の pprof の組み込み例、AGENTS.md と実験メモの雛形
+scripts/lib/awk/   集計（API・SQL・リソース）と ID 生成・URL グルーピング・SQL 正規化
+experiments/       実験メモ（templates/experiment.md をコピーして作る）
+Makefile           よく使う操作のメニュー
 docs/              人向けの手順書
 results/           調査・計測の結果（Git 管理外）
 .gitignore         このディレクトリ用の除外設定（設定・結果・認証情報）

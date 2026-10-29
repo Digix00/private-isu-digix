@@ -82,6 +82,27 @@ ISU_MYSQL_CLI="sudo -n mysql"
 # --apply-dynamic で SET GLOBAL してよい変数
 ISU_MYSQL_DYNAMIC_VARS="slow_query_log slow_query_log_file long_query_time log_output log_queries_not_using_indexes min_examined_row_limit log_slow_extra"
 
+# ---- 計測（measure.sh / report.sh） -----------------------------------------
+# TODO(当日): nginx -T で access_log の場所と形式を確認する（形式は templates/nginx/00-isucon-log.conf の isucon_ltsv）
+ISU_NGINX_ACCESS_LOG=/var/log/nginx/access.log
+ISU_NGINX_LOG_FORMAT=isucon_ltsv
+# TODO(当日): SELECT @@slow_query_log_file で確認する
+ISU_MYSQL_SLOW_LOG=/var/log/mysql/mysql-slow.log
+# 負荷の時系列記録に使うもの（vmstat pidstat iostat から選ぶ）と間隔（秒）
+ISU_MEASURE_COLLECTORS="vmstat pidstat iostat"
+ISU_MEASURE_INTERVAL=1
+# pprof の取得先（対象ホスト上から見たアドレス。templates/go/pprof.go を参照）と CPU プロファイルの秒数
+ISU_PPROF_URL=http://127.0.0.1:6060
+ISU_PPROF_SECONDS=30
+# URL のグルーピング（ERE。上から順に最初に一致したもの。alp の -m と同じ正規表現を使う）
+# \d や (?:...) など ERE にない書き方は使わない。カンマを含む正規表現は alp に渡せない。
+# TODO(当日): アプリのルーティングを見て、ID を含むパスを追加する（以下は private-isu の例）
+ISU_API_GROUPS=(
+  '^/posts/[0-9]+$'
+  '^/@[^/]+$'
+  '^/image/[0-9]+\.(jpg|png|gif)$'
+)
+
 # ---- 保存先 -----------------------------------------------------------------
 # 相対パスは sh/（このツール一式のディレクトリ）が基準
 ISU_RESULTS_DIR=results
