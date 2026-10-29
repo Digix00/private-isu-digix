@@ -1,0 +1,4 @@
+# エントリスクリプトは $ISU_LIB_DIR 経由で lib/ を読み込むため、静的には追跡しない
+disable=SC1091
+# ok/ng を並べる A && B || C は B が常に成功するため意図どおり
+disable=SC2015

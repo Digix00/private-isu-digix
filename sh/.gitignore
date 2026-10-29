@@ -1,0 +1,15 @@
+# ISUCON 準備用スクリプト（このディレクトリごと別のリポジトリへ移せるよう、パスは sh/ からの相対）
+# 接続先・構成を含むローカル設定（例は config/*.example を参照）
+/config/isucon.conf
+/config/hooks/*.sh
+# 調査・計測の結果、ログ、プロファイル
+/results/
+*.pprof
+*.pb.gz
+# 認証情報になりうるもの
+.env
+*.pem
+*.key
+.my.cnf
+# テストはローカルで実行するだけで、Git では管理しない
+/tests/

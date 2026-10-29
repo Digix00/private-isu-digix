@@ -1,0 +1,58 @@
+# shellcheck shell=bash
+# ISUCON 準備スクリプトの設定例。
+#   cp config/isucon.conf.example config/isucon.conf
+# config/isucon.conf は Git 管理外。Bash 形式で source されるため、信頼できる内容だけを書くこと。
+# __TODO__ が残っている項目を使うコマンドは実行前にエラーになる。
+# 秘密情報（DBパスワードなど）はここに書かない。MySQL は対象ホスト上の sudo mysql（auth_socket）
+# または ~/.my.cnf で認証する想定。
+
+# ---- ホストと役割 ----------------------------------------------------------
+# TODO(当日): ~/.ssh/config の Host 名を並べる（例: isu1 isu2 isu3）
+ISU_HOSTS=(__TODO__)
+# TODO(当日): ホストごとの役割（app / nginx / mysql の組み合わせ）
+declare -gA ISU_ROLES=(
+  [__TODO__]="app nginx mysql"
+)
+# 例（関数内で読み込むため declare には -g が必要）:
+# ISU_HOSTS=(isu1 isu2 isu3)
+# declare -gA ISU_ROLES=([isu1]="nginx app" [isu2]="app" [isu3]="mysql")
+
+# ssh に渡す追加オプション。ホスト鍵検証を無効にする指定はしないこと。
+ISU_SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=10)
+# 対象ホスト上で権限が必要な操作に使うコマンド（パスワード入力待ちを避けるため -n）
+ISU_REMOTE_SUDO="sudo -n"
+# 対象ホスト上の作業用ディレクトリ（ロック・アップロード・バックアップ・計測の一時データ）
+ISU_REMOTE_STATE_DIR=/var/tmp/isu-prep
+
+# ---- サービス名 -------------------------------------------------------------
+# TODO(当日): systemctl list-units --type=service で確認する（private-isu の Go 実装は isu-go）
+ISU_APP_SERVICE=__TODO__
+ISU_NGINX_SERVICE=nginx
+ISU_MYSQL_SERVICE=mysql
+
+# ---- 確認（verify.sh） ------------------------------------------------------
+# 役割ごとに待ち受けを確認するポート
+# TODO(当日): アプリのポートを確認する（private-isu は 8080）
+declare -gA ISU_VERIFY_PORTS=(
+  [app]="__TODO__"
+  [nginx]="80"
+  [mysql]="3306"
+)
+# 対象ホスト上で curl する確認先。"役割|URL|期待するステータス" の形式。
+# TODO(当日): 初期化エンドポイントなど副作用のある URL は書かないこと
+ISU_HTTP_CHECKS=(
+  "nginx|http://127.0.0.1/|200"
+  "app|http://127.0.0.1:__TODO__/|200"
+)
+
+# ---- 保存先 -----------------------------------------------------------------
+# 相対パスは sh/（このツール一式のディレクトリ）が基準
+ISU_RESULTS_DIR=results
+ISU_EXPERIMENTS_DIR=experiments
+
+# ---- 出力上限（UTF-8 のバイト数。トークン数ではない） -----------------------
+ISU_CONTEXT_MAX_BYTES=8192
+ISU_OUTPUT_MAX_BYTES=16384
+ISU_OUTPUT_HARD_MAX_BYTES=65536
+ISU_LIST_LIMIT=20
+ISU_FIELD_MAX_BYTES=300
