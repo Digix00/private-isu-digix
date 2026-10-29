@@ -45,6 +45,43 @@ ISU_HTTP_CHECKS=(
   "app|http://127.0.0.1:__TODO__/|200"
 )
 
+# ---- アプリのデプロイ（deploy/app.sh） ------------------------------------
+# 競技アプリのソース（このツールとは別のリポジトリでもよい。絶対パス推奨）
+# TODO(当日): 例 "$HOME/isucon/webapp/golang"
+ISU_APP_SRC_DIR=__TODO__
+# ビルド手順（信頼するローカルのフック）。config/hooks/build-app.sh.example をコピーして編集する
+ISU_APP_BUILD_HOOK=config/hooks/build-app.sh
+# TODO(当日): サーバーの OS/CPU（uname -m が x86_64 なら amd64、aarch64 なら arm64）
+ISU_APP_GOOS=linux
+ISU_APP_GOARCH=__TODO__
+# CGO を使う場合は 1（手元と OS/CPU が違うとビルドできないため中止する）
+ISU_APP_CGO_ENABLED=0
+# TODO(当日): systemd の ExecStart が実行するバイナリのパス
+ISU_APP_REMOTE_BIN=__TODO__
+# 再起動後に対象ホスト上で確認する URL と期待するステータス（空なら active の確認だけ）
+ISU_APP_CHECK_URL=__TODO__
+ISU_APP_CHECK_STATUS=200
+
+# ---- nginx のデプロイ（deploy/nginx.sh） -----------------------------------
+# "手元のパス:配置先の絶対パス"。ここに書いたファイルだけを管理する（他の設定は触らない）。
+# 手元のパスは相対なら sh/ が基準。
+# TODO(当日): 既存の設定を取得してから管理対象を決める（docs/operations.md 参照）
+ISU_NGINX_FILES=(
+  "templates/nginx/00-isucon-log.conf:/etc/nginx/conf.d/00-isucon-log.conf"
+  # "config/nginx/isucon.conf:/etc/nginx/sites-available/isucon.conf"
+)
+ISU_NGINX_CHECK_URL=http://127.0.0.1/
+ISU_NGINX_CHECK_STATUS=200
+
+# ---- MySQL のデプロイ（deploy/mysql.sh） -----------------------------------
+ISU_MYSQL_FILES=(
+  "templates/mysql/99-isucon-slowlog.cnf:/etc/mysql/mysql.conf.d/99-isucon-slowlog.cnf"
+)
+# 対象ホスト上で mysql クライアントを起動するコマンド（認証は auth_socket か ~/.my.cnf。パスワードを書かない）
+ISU_MYSQL_CLI="sudo -n mysql"
+# --apply-dynamic で SET GLOBAL してよい変数
+ISU_MYSQL_DYNAMIC_VARS="slow_query_log slow_query_log_file long_query_time log_output log_queries_not_using_indexes min_examined_row_limit log_slow_extra"
+
 # ---- 保存先 -----------------------------------------------------------------
 # 相対パスは sh/（このツール一式のディレクトリ）が基準
 ISU_RESULTS_DIR=results

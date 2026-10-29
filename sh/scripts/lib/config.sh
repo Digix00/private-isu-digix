@@ -63,6 +63,14 @@ cfg_require() {
     die "次の設定が未設定です (TODO のまま): ${missing[*]} — $ISU_CONFIG を編集してください" "$EX_USAGE"
 }
 
+# 空でもよい項目に __TODO__ が残っていないことを確認する
+cfg_no_todo() {
+  local v
+  for v in "$@"; do
+    [[ "${!v:-}" != *__TODO__* ]] || die "$v が TODO のままです（使わない場合は空にしてください） — $ISU_CONFIG" "$EX_USAGE"
+  done
+}
+
 host_has_role() {
   local host="$1" role="$2"
   [[ " ${ISU_ROLES[$host]:-} " == *" $role "* ]]

@@ -19,8 +19,9 @@ export ISU_REPO_ROOT
 ISU_DRY_RUN="${ISU_DRY_RUN:-0}"
 ISU_PROG="$(basename "$0")"
 
-# 終了コード: 0=成功, 1=処理失敗(一部失敗含む), 2=使い方・設定の誤り
-readonly EX_FAIL=1 EX_USAGE=2
+# 終了コード: 0=成功, 1=処理失敗(一部失敗含む), 2=使い方・設定の誤り, 3=ロック競合
+# shellcheck disable=SC2034 # 読み込む側のスクリプトで使う
+readonly EX_FAIL=1 EX_USAGE=2 EX_LOCKED=3
 
 log()  { printf '[%s] %s\n' "$ISU_PROG" "$*" >&2; }
 warn() { printf '[%s] warning: %s\n' "$ISU_PROG" "$*" >&2; }
@@ -86,4 +87,8 @@ atomic_write() {
 # --help 用。スクリプト先頭の "#?" で始まる行を表示する。
 print_help() {
   sed -n 's/^#? \{0,1\}//p' "$0"
+}
+
+sha256_file() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1"; else shasum -a 256 "$1"; fi | awk '{print $1}'
 }

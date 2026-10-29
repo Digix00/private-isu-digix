@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# アプリのビルド手順（信頼するローカルのフック）。scripts/deploy/app.sh から呼ばれる。
+#   cp config/hooks/build-app.sh.example config/hooks/build-app.sh && chmod +x config/hooks/build-app.sh
+# 受け取る環境変数: GOOS GOARCH CGO_ENABLED ISU_APP_SRC_DIR OUT（成果物を書き出すパス）
+# 終了コードが 0 以外なら配布しない。
+set -euo pipefail
+cd "$ISU_APP_SRC_DIR"
+# TODO(当日): リポジトリの Makefile やパッケージ構成に合わせる（例: go build -o "$OUT" ./cmd/app）
+go build -trimpath -o "$OUT" .

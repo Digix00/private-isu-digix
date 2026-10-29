@@ -1,0 +1,17 @@
+# スロークエリログの設定（計測用）。
+# 配置例: /etc/mysql/mysql.conf.d/99-isucon-slowlog.cnf
+#   Ubuntu の MySQL は /etc/mysql/my.cnf → mysql.conf.d/*.cnf を名前順に読む。後に読まれた値が勝つため 99- を付ける。
+#   実際の読み込み順は: mysqld --verbose --help | grep -A1 'Default options'
+# 配布: scripts/deploy/mysql.sh --apply-dynamic  （再起動せずに稼働中へ反映。下の変数はすべて動的に変更できる）
+[mysqld]
+slow_query_log = ON
+slow_query_log_file = /var/log/mysql/mysql-slow.log
+log_output = FILE
+# 0 にすると全クエリを記録する。短い SQL の大量発行（N+1 など）も回数として見えるようになる。
+# 代わりにクエリごとに書き込みが発生し、QPS が高いと数 % 〜 十数 % 遅くなることがある。
+# 比較するベンチ同士は同じ設定で取ること。
+long_query_time = 0
+# 計測をやめるときは slow_query_log = OFF にして --apply-dynamic で反映する（ファイルも残るので再起動後も OFF）。
+
+# 注意: SET GLOBAL long_query_time は「新しく作られた接続」から有効になる。
+# アプリの接続プールが張りっぱなしの接続は古い値のまま。反映後にアプリを再起動するとそろう。
