@@ -1,0 +1,10 @@
+# 当日の構成（ホスト名など）。例は env.example.mk
+/env.mk
+# ビルド成果物と、make が使う状態ファイル
+/.build/
+/.current-run
+/.last-deploy
+# 元ログとプロファイルは大きいので管理しない（alp.txt / slow.txt / pprof.txt / memo.md はコミットしてチームで共有してよい）
+/results/*/access.log
+/results/*/slow.log
+/results/*/*.pb.gz
